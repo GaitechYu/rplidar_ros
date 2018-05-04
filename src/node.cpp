@@ -52,7 +52,9 @@ void publish_scan(ros::Publisher *pub,
                   size_t node_count, ros::Time start,
                   double scan_time, bool inverted,
                   float angle_min, float angle_max,
-                  std::string frame_id)
+                  std::string frame_id,
+                  double range_min,
+                  double range_max)
 {
     static int scan_count = 0;
     sensor_msgs::LaserScan scan_msg;
@@ -74,8 +76,8 @@ void publish_scan(ros::Publisher *pub,
 
     scan_msg.scan_time = scan_time;
     scan_msg.time_increment = scan_time / (double)(node_count-1);
-    scan_msg.range_min = 0.15;
-    scan_msg.range_max = 8.0;
+    scan_msg.range_min = range_min;
+    scan_msg.range_max = range_max;
 
     scan_msg.intensities.resize(node_count);
     scan_msg.ranges.resize(node_count);
@@ -188,6 +190,8 @@ int main(int argc, char * argv[]) {
     std::string frame_id;
     bool inverted = false;
     bool angle_compensate = true;
+    double range_min = 0.15;
+    double range_max = 8.0;
 
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
@@ -197,7 +201,9 @@ int main(int argc, char * argv[]) {
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
     nh_private.param<bool>("inverted", inverted, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, true);
-
+    nh_private.param<double>("range_min",range_min,0.15);
+    nh_private.param<double>("range_max",range_max,8.0);
+    
     printf("RPLIDAR running on ROS package rplidar_ros\n"
            "SDK Version: "RPLIDAR_SDK_VERSION"\n");
 
@@ -276,7 +282,7 @@ int main(int argc, char * argv[]) {
                     publish_scan(&scan_pub, angle_compensate_nodes, angle_compensate_nodes_count,
                              start_scan_time, scan_duration, inverted,
                              angle_min, angle_max,
-                             frame_id);
+                             frame_id, range_min, range_max);
                 } else {
                     int start_node = 0, end_node = 0;
                     int i = 0;
@@ -293,7 +299,7 @@ int main(int argc, char * argv[]) {
                     publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1,
                              start_scan_time, scan_duration, inverted,
                              angle_min, angle_max,
-                             frame_id);
+                             frame_id, range_min, range_max);
                }
             } else if (op_result == RESULT_OPERATION_FAIL) {
                 // All the data is invalid, just publish them
@@ -303,7 +309,7 @@ int main(int argc, char * argv[]) {
                 publish_scan(&scan_pub, nodes, count,
                              start_scan_time, scan_duration, inverted,
                              angle_min, angle_max,
-                             frame_id);
+                             frame_id, range_min, range_max);
             }
         }
 
